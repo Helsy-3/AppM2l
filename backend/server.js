@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const path = require('path'); // <== Ajouté pour servir l'app Flutter Web
+
 const userRoute = require('./Routes/userRoute');
 const reservationRoutes = require('./Routes/reservationRoute');
 const spacesRoutes = require('./Routes/spaceRoute');
@@ -25,22 +27,25 @@ app.use((req, res, next) => {
                 next();
 });
 
-// Routes
+// Routes API
 app.use('/user', userRoute);
 app.use('/reservations', reservationRoutes);
 app.use('/spaces', spacesRoutes);
 
-// Route de base pour vérifier que le serveur fonctionne
-app.get('/', (req, res) => {
-                res.json({ message: 'API M2L fonctionnelle' });
+// ✅ Servir les fichiers statiques de l'application Flutter Web
+app.use(express.static(path.join(__dirname, 'public')));
+
+// ✅ Rediriger toutes les routes vers index.html (SPA Flutter)
+app.get('*', (req, res) => {
+                res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Middleware de gestion d'erreur 404
+// Middleware 404 pour API
 app.use((req, res, next) => {
                 res.status(404).json({ message: "Cette ressource n'existe pas" });
 });
 
-// Middleware de gestion globale des erreurs
+// Middleware global de gestion d'erreurs
 app.use((err, req, res, next) => {
                 console.error("❌ ERREUR SERVEUR :", err);
                 res.status(500).json({
@@ -61,7 +66,7 @@ process.on('unhandledRejection', (reason, promise) => {
 // Lancement du serveur
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-                console.log(`✅ Serveur à l'écoute sur le port ${PORT}`);
+                console.log(`✅ Serveur à l'écoute sur http://82.96.161.255:${PORT}`);
 });
 
 module.exports = app;
