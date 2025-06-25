@@ -1,47 +1,63 @@
-import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class ApiService {
-  static const String baseUrl = 'http://127.0.0.1:3000';
+  static const String baseUrl =
+      'http://localhost:3000/user'; // pour Flutter Web
 
-  // ✅ Inscription
-  static Future<Map<String, dynamic>> registerUser(
-      String nom, String prenom, String email, String password) async {
-    try {
-      final response = await http
-          .post(
-            Uri.parse('$baseUrl/user/register'),
-            headers: {'Content-Type': 'application/json'},
-            body: json.encode({
-              'nom': nom,
-              'prenom': prenom,
-              'email': email,
-              'password': password
-            }),
-          )
-          .timeout(const Duration(seconds: 10));
+  static Future<Map<String, dynamic>> login(
+      String email, String password) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/login'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email, 'password': password}),
+    );
 
-      return json.decode(response.body);
-    } catch (e) {
-      throw Exception('Erreur d\'inscription : $e');
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Erreur login: ${response.body}');
     }
   }
 
-  // ✅ Connexion
-  static Future<Map<String, dynamic>> loginUser(
-      String email, String password) async {
-    try {
-      final response = await http
-          .post(
-            Uri.parse('$baseUrl/user/login'),
-            headers: {'Content-Type': 'application/json'},
-            body: json.encode({'email': email, 'password': password}),
-          )
-          .timeout(const Duration(seconds: 10));
+  static Future<void> register(Map<String, String> userData) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/register'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(userData),
+    );
 
-      return json.decode(response.body);
-    } catch (e) {
-      throw Exception('Erreur de connexion : $e');
+    if (response.statusCode != 200) {
+      throw Exception('Erreur register: ${response.body}');
+    }
+  }
+
+  static Future<Map<String, dynamic>> getProfile(String token) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/profile'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Erreur getProfile: ${response.body}');
+    }
+  }
+
+  static Future<void> updateProfile(
+      String token, Map<String, dynamic> data) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/complement'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(data),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Erreur updateProfile: ${response.body}');
     }
   }
 }

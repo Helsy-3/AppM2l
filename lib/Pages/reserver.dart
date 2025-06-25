@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ReservePage extends StatefulWidget {
   const ReservePage({super.key});
@@ -14,7 +17,7 @@ class ReservePageState extends State<ReservePage> {
   String? _pricePerDay;
   String? _totalAmount = "";
   String? _duration = "";
-  final bool _isLoading = false;
+  bool _isLoading = false;
 
   @override
   void didChangeDependencies() {
@@ -43,60 +46,70 @@ class ReservePageState extends State<ReservePage> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Réserver un Espace - M2L"),
-        backgroundColor: Colors.redAccent,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              const Text(
-                "Formulaire de Réservation",
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFFDC320F),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    _buildDatePicker("Date de début *", _startDateController),
-                    const SizedBox(height: 20),
-                    _buildDatePicker("Date de fin *", _endDateController),
-                    const SizedBox(height: 20),
-                    _buildReservationSummary(),
-                    const SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: _isLoading
-                          ? null
-                          : () {
-                              if (_formKey.currentState?.validate() ?? false) {
-                                _calculateTotal();
-                              }
-                            },
-                      child: _isLoading
-                          ? const CircularProgressIndicator()
-                          : const Text(
-                              "Créer la réservation",
-                              style: TextStyle(fontSize: 18),
-                            ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  Future<void> _sendReservation() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+
+    if (token == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Veuillez vous connecter.")),
+      );
+      return;
+    }
+
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final int? spaceId = args?['space_id'];
+    if (spaceId == null) return;
+
+    final String startDate = _startDateController.text;
+    final String endDate = _endDateController.text;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final response = await http.post(
+        Uri.parse('http://10.0.2.2:3000/reservations/create'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'space_id': spaceId,
+          'start_date': startDate,
+          'end_date': endDate,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 201) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(data['message'] ?? "Réservation créée !")),
+        );
+        setState(() {
+          _startDateController.clear();
+          _endDateController.clear();
+          _duration = "";
+          _totalAmount = "";
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(data['message'] ?? "Erreur de réservation")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text("Erreur de communication avec le serveur")),
+      );
+    }
+
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   Widget _buildDatePicker(String label, TextEditingController controller) {
@@ -142,10 +155,7 @@ class ReservePageState extends State<ReservePage> {
         children: [
           const Text(
             "Résumé de la réservation",
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 15),
           _buildPriceInfo("Prix par jour", "$_pricePerDay €"),
@@ -166,6 +176,59 @@ class ReservePageState extends State<ReservePage> {
           Text(label),
           Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
         ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Réserver un Espace - M2L"),
+        backgroundColor: Colors.redAccent,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              const Text(
+                "Formulaire de Réservation",
+                style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFDC320F)),
+              ),
+              const SizedBox(height: 20),
+              Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    _buildDatePicker("Date de début *", _startDateController),
+                    const SizedBox(height: 20),
+                    _buildDatePicker("Date de fin *", _endDateController),
+                    const SizedBox(height: 20),
+                    _buildReservationSummary(),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: _isLoading
+                          ? null
+                          : () {
+                              if (_formKey.currentState?.validate() ?? false) {
+                                _calculateTotal();
+                                _sendReservation();
+                              }
+                            },
+                      child: _isLoading
+                          ? const CircularProgressIndicator()
+                          : const Text("Créer la réservation"),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

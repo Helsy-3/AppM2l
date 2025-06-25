@@ -44,33 +44,35 @@ class RegisterPageState extends State<RegisterPage> {
     try {
       final response = await http
           .post(
-            Uri.parse('http://127.0.0.1:3000/user/register'),
+            Uri.parse('http://10.0.2.2:3000/user/register'),
             headers: {'Content-Type': 'application/json'},
             body: json.encode({
               'nom': nom,
               'prenom': prenom,
               'email': email,
-              'password': password
+              'password': password,
             }),
           )
-          .timeout(
-              const Duration(seconds: 10)); // Timeout pour éviter les blocages
+          .timeout(const Duration(seconds: 10));
 
       final responseData = json.decode(response.body);
 
       if (!mounted) return;
 
-      if (response.statusCode == 201) {
+      if (response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(responseData['message'] ?? 'Inscription réussie!')),
+            content: Text(responseData['message'] ?? 'Inscription réussie !'),
+          ),
         );
         Navigator.pushNamed(context, '/login');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(
-                  responseData['error'] ?? 'Erreur lors de l\'inscription')),
+            content: Text(
+              responseData['error'] ?? 'Erreur lors de l\'inscription',
+            ),
+          ),
         );
       }
     } catch (e) {
@@ -206,5 +208,3 @@ class RegisterPageState extends State<RegisterPage> {
     );
   }
 }
-
-

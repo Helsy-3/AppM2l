@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -11,7 +12,6 @@ class LoginPage extends StatefulWidget {
 
 class LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
@@ -38,7 +38,8 @@ class LoginPageState extends State<LoginPage> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://127.0.0.1:3000/user/login'),
+        Uri.parse(
+            'http://localhost:3000/user/login'), // ✅ localhost pour Chrome
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'email': email, 'password': password}),
       );
@@ -48,10 +49,17 @@ class LoginPageState extends State<LoginPage> {
       if (!mounted) return;
 
       if (response.statusCode == 200) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('token', responseData['token']);
+        await prefs.setString(
+            'user_id', responseData['user']['id_user'].toString());
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content: Text(responseData['message'] ?? 'Connexion réussie!')),
         );
+
+        FocusScope.of(context).unfocus(); // ✅ corrige le bug Flutter Web
         Navigator.pushReplacementNamed(context, '/home');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
