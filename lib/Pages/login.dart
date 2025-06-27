@@ -39,7 +39,7 @@ class LoginPageState extends State<LoginPage> {
     try {
       final response = await http.post(
         Uri.parse(
-            'http://localhost:3000/user/login'), // ✅ localhost pour Chrome
+            'https://m2l-production.up.railway.app/user/login'), // ✅ localhost pour Chrome
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'email': email, 'password': password}),
       );

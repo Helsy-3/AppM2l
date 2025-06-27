@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 
 class ApiService {
   static const String baseUrl =
-      'http://localhost:3000/user'; // pour Flutter Web
+      'https://m2l-production.up.railway.app/user'; // pour Flutter Web
 
   static Future<Map<String, dynamic>> login(
       String email, String password) async {

@@ -71,7 +71,7 @@ class ReservePageState extends State<ReservePage> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://10.0.2.2:3000/reservations/create'),
+        Uri.parse('https://m2l-production.up.railway.app/reservations/create'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',

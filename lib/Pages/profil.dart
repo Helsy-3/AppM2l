@@ -34,7 +34,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     try {
       final res = await http.get(
-        Uri.parse('http://10.0.2.2:3000/user/profile'),
+        Uri.parse('https://m2l-production.up.railway.app/user/profile'),
         headers: {'Authorization': 'Bearer $token'},
       );
       final data = json.decode(res.body);
@@ -62,7 +62,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     try {
       final res = await http.put(
-        Uri.parse('http://10.0.2.2:3000/user/complement'),
+        Uri.parse('https://m2l-production.up.railway.app/user/complement'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json'
